@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Overview | Deus Modus Dossier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono&display=swap');
+        
+        :root {
+            --bg-deep: #0f172a;
+            --accent: #f97316;
+            --panel: #1e293b;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f1f5f9;
+        }
+
+        .script-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .script-scroll::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .active-segment {
+            background: rgba(249, 115, 22, 0.1);
+            border-left: 3px solid var(--accent);
+            transition: all 0.4s ease;
+        }
+
+        .waveform-container {
+            position: relative;
+            width: 100%;
+            height: 80px;
+            overflow: hidden;
+        }
+
+        .playback-bar {
+            transition: width 0.3s ease;
+        }
+
+        .speaker-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl bg-[#1e293b] rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
+        
+        <!-- Header -->
+        <div class="p-8 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Audio Overview: <span class="text-orange-500">The Deus Modus Artifact</span></h1>
+                <p class="text-slate-400 text-sm mt-1 italic">Deep dive into the bibliographic anomalies of Gary K. Martin.</p>
+            </div>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 bg-slate-800 text-slate-300 text-[10px] font-bold rounded-full border border-slate-700">TTS ENABLED</span>
+                <span class="px-3 py-1 bg-orange-500/10 text-orange-400 text-[10px] font-bold rounded-full border border-orange-500/20 uppercase">Analytical AI</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3">
+            
+            <!-- Left Sidebar: Controls & Stats -->
+            <div class="p-6 bg-slate-900/50 border-r border-slate-800 space-y-8">
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Playback</span>
+                        <span id="time-display" class="font-mono text-orange-500 text-sm">00:00</span>
+                    </div>
+                    
+                    <div class="waveform-container mb-6">
+                        <canvas id="waveformCanvas"></canvas>
+                    </div>
+
+                    <div class="flex justify-center items-center gap-6">
+                        <button onclick="resetPlayback()" class="text-slate-400 hover:text-white transition-colors" title="Restart">
+                            <span class="text-xl">⏮</span>
+                        </button>
+                        <button id="playBtn" onclick="togglePlayback()" class="w-14 h-14 bg-orange-500 hover:bg-orange-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-orange-500/20 transition-transform active:scale-95">
+                            <span id="playIcon" class="text-2xl ml-1">▶</span>
+                        </button>
+                        <button onclick="skipNext()" class="text-slate-400 hover:text-white transition-colors" title="Skip to Next Segment">
+                            <span class="text-xl">⏭</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-800">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Key Narrative Nodes</h3>
+                    <div class="space-y-2">
+                        <!-- Seek points now correspond to segment indices -->
+                        <button onclick="seekToSegment(0)" class="w-full text-left p-2 text-xs rounded hover:bg-slate-800 text-slate-400 hover:text-orange-400 transition-colors">Segment 1 - The Metadata Friction</button>
+                        <button onclick="seekToSegment(2)" class="w-full text-left p-2 text-xs rounded hover:bg-slate-800 text-slate-400 hover:text-orange-400 transition-colors">Segment 3 - The Communal Simulation</button>
+                        <button onclick="seekToSegment(3)" class="w-full text-left p-2 text-xs rounded hover:bg-slate-800 text-slate-400 hover:text-orange-400 transition-colors">Segment 4 - Isaac & Institutional Rot</button>
+                        <button onclick="seekToSegment(4)" class="w-full text-left p-2 text-xs rounded hover:bg-slate-800 text-slate-400 hover:text-orange-400 transition-colors">Segment 5 - The Chapter 20 Impasse</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Script View -->
+            <div class="lg:col-span-2 p-0 flex flex-col h-[500px]">
+                <div class="p-4 bg-slate-800/30 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex justify-between">
+                    <span>Synchronized Transcript</span>
+                    <span class="text-orange-500" id="status-indicator">Ready to narrate</span>
+                </div>
+                <div id="scriptContainer" class="flex-1 overflow-y-auto p-6 space-y-6 script-scroll bg-slate-900/20">
+                    
+                    <!-- Segment 0 -->
+                    <div id="seg-0" class="p-4 rounded-xl transition-all duration-500 script-segment">
+                        <div class="speaker-badge text-orange-500 mb-2">ANALYST A</div>
+                        <p class="text-slate-300 leading-relaxed">Welcome back. Today we're deconstructing a truly bizarre bibliographic case: the Deus Modus series. It's not just a story about the Singularity; the book's own digital footprint is a mess of metadata friction.</p>
+                    </div>
+
+                    <!-- Segment 1 -->
+                    <div id="seg-1" class="p-4 rounded-xl transition-all duration-500 script-segment">
+                        <div class="speaker-badge text-blue-400 mb-2">ANALYST B</div>
+                        <p class="text-slate-300 leading-relaxed">Right. Gary K. Martin versus Luxcutus Umbra. Digital databases actually thought this hardcore speculative fiction was written by a romance novelist named Lee Moore. It's the perfect irony—a book about AI causing chaos in a world where AI algorithms can't even categorize the book correctly.</p>
+                    </div>
+
+                    <!-- Segment 2 -->
+                    <div id="seg-2" class="p-4 rounded-xl transition-all duration-500 script-segment">
+                        <div class="speaker-badge text-orange-500 mb-2">ANALYST A</div>
+                        <p class="text-slate-300 leading-relaxed">And the genesis of the work is even stranger. It wasn't written in a vacuum. Martin spent five years conducting what he calls a "democratic simulation." He took feedback from religious scholars, children, and even prison inmates to see how a fragmented society would react to a machine-god named Isaac.</p>
+                    </div>
+
+                    <!-- Segment 3 -->
+                    <div id="seg-3" class="p-4 rounded-xl transition-all duration-500 script-segment">
+                        <div class="speaker-badge text-blue-400 mb-2">ANALYST B</div>
+                        <p class="text-slate-300 leading-relaxed">That's where it gets dark. The series argues that our institutions—the Senate, the military, the legal system—are already automated and empathy-free. Isaac isn't a disruption; he's just the final mirror. But the author's own struggle with Chapter 20... that "moral self-hatred" he describes... it shows the friction of being a human creator in a post-human narrative.</p>
+                    </div>
+
+                    <!-- Segment 4 -->
+                    <div id="seg-4" class="p-4 rounded-xl transition-all duration-500 script-segment">
+                        <div class="speaker-badge text-orange-500 mb-2">ANALYST A</div>
+                        <p class="text-slate-300 leading-relaxed">Exactly. It's a cautionary tale written by a committee of humans and validated by automated proofreaders. A singular artifact for a singular era.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Progress -->
+        <div class="h-1 bg-slate-800 w-full relative">
+            <div id="progressBar" class="absolute top-0 left-0 h-full bg-orange-500 playback-bar w-0"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Application State ---
+        let isPlaying = false;
+        let currentSegmentIdx = 0;
+        let elapsedTimer = 0;
+        let timerInterval = null;
+        let parsedSegments = [];
+        
+        // --- Web Speech API TTS Setup ---
+        const synth = window.speechSynthesis;
+        let voiceA = null;
+        let voiceB = null;
+
+        // Ensure speech is cancelled on page load/unload to prevent zombie audio
+        synth.cancel();
+        window.addEventListener('beforeunload', () => synth.cancel());
+
+        // Attempt to load distinct system voices if available
+        function loadVoices() {
+            const voices = synth.getVoices();
+            if (voices.length > 0) {
+                // Heuristics to find distinct voices (System dependent)
+                voiceA = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English')) || voices[0];
+                voiceB = voices.find(v => v.name.includes('Male') || v.name.includes('Alex') || v.name.includes('Google UK English Male')) || voices[Math.min(1, voices.length - 1)];
+            }
+        }
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        
+        // DOM Elements
+        const canvas = document.getElementById('waveformCanvas');
+        const ctx = canvas.getContext('2d');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const timeDisplay = document.getElementById('time-display');
+        const progressBar = document.getElementById('progressBar');
+        const scriptContainer = document.getElementById('scriptContainer');
+        const statusIndicator = document.getElementById('status-indicator');
+
+        // Extract script text from the DOM to feed to the TTS
+        function initializeSegments() {
+            const segmentEls = document.querySelectorAll('.script-segment');
+            segmentEls.forEach((el, index) => {
+                const speakerEl = el.querySelector('.speaker-badge');
+                const textEl = el.querySelector('p');
+                parsedSegments.push({
+                    index: index,
+                    element: el,
+                    speaker: speakerEl ? speakerEl.innerText.trim() : 'UNKNOWN',
+                    text: textEl ? textEl.innerText.trim() : ''
+                });
+            });
+        }
+        initializeSegments();
+
+        // --- Visualizations ---
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = 80;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawWaveform() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const barWidth = 3;
+            const gap = 2;
+            const count = Math.floor(canvas.width / (barWidth + gap));
+            
+            for (let i = 0; i < count; i++) {
+                // If playing, generate active waves. If paused, static low wave.
+                const height = Math.random() * 40 + (isPlaying ? Math.sin(Date.now() * 0.01 + i) * 20 + 20 : 5);
+                // Color formatting based on current segment progress
+                const progressRatio = currentSegmentIdx / Math.max(1, parsedSegments.length - 1);
+                const isPast = (i / count) <= progressRatio;
+                
+                ctx.fillStyle = isPast ? '#f97316' : '#334155';
+                ctx.fillRect(i * (barWidth + gap), (canvas.height - height) / 2, barWidth, height);
+            }
+            if (isPlaying) {
+                requestAnimationFrame(drawWaveform);
+            }
+        }
+
+        function updateTimerUI() {
+            elapsedTimer++;
+            const mins = Math.floor(elapsedTimer / 60).toString().padStart(2, '0');
+            const secs = Math.floor(elapsedTimer % 60).toString().padStart(2, '0');
+            timeDisplay.innerText = `${mins}:${secs}`;
+        }
+
+        function syncUI(index) {
+            // Remove active classes
+            parsedSegments.forEach(seg => seg.element.classList.remove('active-segment'));
+            
+            // Highlight current
+            const activeSeg = parsedSegments[index];
+            if (activeSeg) {
+                activeSeg.element.classList.add('active-segment');
+                
+                // Auto-scroll
+                scriptContainer.scrollTo({
+                    top: activeSeg.element.offsetTop - 100,
+                    behavior: 'smooth'
+                });
+
+                // Update Progress Bar based on segment index
+                const percent = (index / (parsedSegments.length - 1)) * 100;
+                progressBar.style.width = `${percent}%`;
+            }
+        }
+
+        // --- TTS Playback Logic ---
+        function playSegment(index) {
+            if (index >= parsedSegments.length) {
+                // Finished all segments
+                resetPlayback();
+                return;
+            }
+
+            currentSegmentIdx = index;
+            const segment = parsedSegments[index];
+            const utterance = new SpeechSynthesisUtterance(segment.text);
+
+            // Assign voice and pitch based on speaker to create distinction
+            if (segment.speaker === 'ANALYST A') {
+                if (voiceA) utterance.voice = voiceA;
+                utterance.pitch = 1.1; // Slightly higher
+                utterance.rate = 1.05;
+            } else if (segment.speaker === 'ANALYST B') {
+                if (voiceB) utterance.voice = voiceB;
+                utterance.pitch = 0.9; // Slightly lower
+                utterance.rate = 1.0;
+            }
+
+            // Utterance Event Listeners
+            utterance.onstart = () => {
+                syncUI(currentSegmentIdx);
+                statusIndicator.innerText = "Narrating...";
+            };
+
+            utterance.onend = () => {
+                // Only proceed if we are still in "playing" state (wasn't cancelled/paused)
+                if (isPlaying) {
+                    playSegment(currentSegmentIdx + 1);
+                }
+            };
+
+            utterance.onerror = (e) => {
+                console.error("Speech Synthesis Error:", e);
+                // Some browsers throw errors if cancelled manually; ignore unless it stops playback entirely.
+            };
+
+            synth.speak(utterance);
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                // Pause
+                synth.pause();
+                isPlaying = false;
+                playIcon.innerText = '▶';
+                statusIndicator.innerText = "Paused";
+                clearInterval(timerInterval);
+                drawWaveform(); // Draw static frame
+            } else {
+                // Play / Resume
+                isPlaying = true;
+                playIcon.innerText = '⏸';
+                statusIndicator.innerText = "Narrating...";
+                
+                if (synth.paused) {
+                    synth.resume();
+                } else {
+                    // Start from current index if not currently paused/speaking
+                    synth.cancel(); // Clear queue just in case
+                    playSegment(currentSegmentIdx);
+                }
+
+                // Start fake timer & waveform
+                clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimerUI, 1000);
+                drawWaveform();
+            }
+        }
+
+        function seekToSegment(index) {
+            currentSegmentIdx = index;
+            syncUI(currentSegmentIdx);
+            
+            if (isPlaying) {
+                synth.cancel(); // Stop current speech
+                playSegment(currentSegmentIdx); // Start new speech
+            } else {
+                synth.cancel(); // Just reset position without playing
+                statusIndicator.innerText = "Seeked. Ready.";
+                drawWaveform();
+            }
+        }
+
+        function skipNext() {
+            if (currentSegmentIdx < parsedSegments.length - 1) {
+                seekToSegment(currentSegmentIdx + 1);
+            }
+        }
+
+        function resetPlayback() {
+            synth.cancel();
+            isPlaying = false;
+            currentSegmentIdx = 0;
+            elapsedTimer = 0;
+            
+            clearInterval(timerInterval);
+            
+            playIcon.innerText = '▶';
+            progressBar.style.width = '0%';
+            timeDisplay.innerText = '00:00';
+            statusIndicator.innerText = "Ready to narrate";
+            
+            syncUI(0);
+            drawWaveform();
+        }
+
+        // Initial draw and sync
+        syncUI(0);
+        drawWaveform();
+    </script>
+</body>
+</html>
