@@ -1,5 +1,5 @@
 # DEUS MODUS Home Page
 blackstonespecs.github.io/devops
 
-#The Dark Site 
+# The Dark Site 
 godmodeseries.wordpress.com
